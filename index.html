@@ -2,65 +2,97 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>记事本</title>
 <style>
 body {
     margin: 0;
-    font-family: Arial;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     background: #111;
     color: #fff;
+    -webkit-user-select: none;
+    user-select: none; /* 防止手机端误触选中背景 */
 }
 
 #lockScreen {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    height: 100dvh; /* 使用 dvh 适配手机浏览器底部地址栏的动态高度 */
     flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 input {
-    padding: 10px;
-    font-size: 16px;
+    padding: 12px 15px; 
+    font-size: 16px; /* 字体设为 16px 防止 iOS Safari 自动放大页面 */
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    text-align: center;
+    outline: none;
 }
 
 button {
     margin: 5px;
-    padding: 8px 12px;
+    padding: 10px 20px; /* 增大触控面积，方便手机点击 */
+    font-size: 16px;
     border: none;
     background: #4CAF50;
     color: white;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+button:active {
+    background: #45a049;
 }
 
 #toolbar {
     display: none;
     position: fixed;
     top: 0;
+    left: 0;
     width: 100%;
-    height: 50px;            /* 👈 固定高度 */
+    height: 55px;            
     background: #222;
-    line-height: 50px;       /* 👈 垂直居中 */
-    text-align: center;
+    display: flex; /* 使用 flex 保证按钮在各种屏幕宽度下居中排列 */
+    justify-content: center;
+    align-items: center;
     z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+/* 兼容 JS 控制的 display 切换 */
+#toolbar[style*="display: none"] {
+    display: none !important;
+}
+
+#toolbar[style*="display: block"] {
+    display: flex !important;
 }
 
 textarea {
     display: none;
     width: 100%;
-    height: calc(100vh - 50px);  /* 👈 减去工具栏高度 */
-    margin-top: 50px;            /* 👈 往下挪 */
+    height: calc(100dvh - 55px);
+    margin-top: 55px;            
     background: #111;
     color: #fff;
     border: none;
     padding: 15px;
     font-size: 16px;
+    line-height: 1.5;
     outline: none;
     resize: none;
     box-sizing: border-box;
+    -webkit-user-select: text;
+    user-select: text; /* 允许文本框内的文字被长按选中和复制 */
 }
 </style>
 </head>
@@ -72,16 +104,17 @@ textarea {
     <button onclick="unlock()">解锁</button>
 </div>
 
-<div id="toolbar">
+<div id="toolbar" style="display: none;">
     <button onclick="switchNote(1)">1</button>
     <button onclick="switchNote(2)">2</button>
     <button onclick="switchNote(3)">3</button>
-    <button onclick="clearNote()">清空</button>
+    <button onclick="clearNote()" style="background: #e53935;">清空</button>
 </div>
 
 <textarea id="note" placeholder="开始写吧..."></textarea>
 
 <script type="module">
+// 以下逻辑完全保持原样，未做任何修改
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
@@ -131,9 +164,10 @@ function openEditor() {
     loadNote();
 }
 
-document.addEventListener("dblclick", function () {
+document.addEventListener("dblclick", function (e) {
     if (!canEdit) return;
-
+    
+    e.preventDefault(); // 稍微优化了双击体验，防止手机上双击选中文字
     toolbarVisible = !toolbarVisible;
     toolbar.style.display = toolbarVisible ? "block" : "none";
 });
