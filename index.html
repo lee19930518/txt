@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>记事本</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #111;
+    color: #fff;
+}
+
+#lockScreen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+}
+
+input {
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+}
+
+button {
+    margin: 5px;
+    padding: 8px 12px;
+    border: none;
+    background: #4CAF50;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#toolbar {
+    display: none;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 50px;            /* 👈 固定高度 */
+    background: #222;
+    line-height: 50px;       /* 👈 垂直居中 */
+    text-align: center;
+    z-index: 10;
+}
+
+textarea {
+    display: none;
+    width: 100%;
+    height: calc(100vh - 50px);  /* 👈 减去工具栏高度 */
+    margin-top: 50px;            /* 👈 往下挪 */
+    background: #111;
+    color: #fff;
+    border: none;
+    padding: 15px;
+    font-size: 16px;
+    outline: none;
+    resize: none;
+    box-sizing: border-box;
+}
+</style>
+</head>
+
+<body>
+
+<div id="lockScreen">
+    <input type="password" id="password" placeholder="输入密码">
+    <button onclick="unlock()">解锁</button>
+</div>
+
+<div id="toolbar">
+    <button onclick="switchNote(1)">1</button>
+    <button onclick="switchNote(2)">2</button>
+    <button onclick="switchNote(3)">3</button>
+    <button onclick="clearNote()">清空</button>
+</div>
+
+<textarea id="note" placeholder="开始写吧..."></textarea>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+ const firebaseConfig = {
+    apiKey: "AIzaSyBA0cNjLa0rtBgNU-LmoZyhTGDcCUDZEao",
+    authDomain: "project-6359154869764247302.firebaseapp.com",
+    projectId: "project-6359154869764247302",
+    storageBucket: "project-6359154869764247302.firebasestorage.app",
+    messagingSenderId: "461741205224",
+    appId: "1:461741205224:web:4eb648623e600df43f4b5d"
+  };
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const viewPassword = "1234";
+const editPassword = "9999";
+
+let currentNote = 1;
+let toolbarVisible = false;
+let canEdit = false;
+
+const note = document.getElementById("note");
+const lockScreen = document.getElementById("lockScreen");
+const toolbar = document.getElementById("toolbar");
+
+window.unlock = function() {
+    const input = document.getElementById("password").value;
+
+    if (input === editPassword) {
+        canEdit = true;
+        openEditor();
+    } else if (input === viewPassword) {
+        canEdit = false;
+        openEditor();
+    } else {
+        alert("密码错误");
+    }
+}
+
+function openEditor() {
+    lockScreen.style.display = "none";
+    note.style.display = "block";
+
+    note.readOnly = !canEdit;
+    toolbar.style.display = canEdit ? "block" : "none";
+
+    loadNote();
+}
+
+document.addEventListener("dblclick", function () {
+    if (!canEdit) return;
+
+    toolbarVisible = !toolbarVisible;
+    toolbar.style.display = toolbarVisible ? "block" : "none";
+});
+
+window.switchNote = async function(num) {
+    if (!canEdit) return;
+    saveNote();
+    currentNote = num;
+    loadNote();
+}
+
+async function loadNote() {
+    const ref = doc(db, "notes", "note_" + currentNote);
+    const snap = await getDoc(ref);
+
+    note.value = snap.exists() ? snap.data().text : "";
+}
+
+async function saveNote() {
+    if (!canEdit) return;
+
+    const ref = doc(db, "notes", "note_" + currentNote);
+    await setDoc(ref, {
+        text: note.value
+    });
+}
+
+window.clearNote = async function () {
+    if (!canEdit) return;
+    if (confirm("清空当前？")) {
+        note.value = "";
+
+        const ref = doc(db, "notes", "note_" + currentNote);
+        await setDoc(ref, {
+            text: ""
+        });
+    }
+}
+
+note.addEventListener("input", saveNote);
+</script>
+
+</body>
+</html>
